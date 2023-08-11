@@ -1,0 +1,69 @@
+﻿@page "/"
+@inject NavigationManager Navigation
+@inject HttpClient HttpClient
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider CustomAuthenticationStateProvider
+<div class="row justify-content-center">
+    <div class="col-lg-4 mt-5">
+        <h2 class="text-center mb-4">Sign In</h2>
+        <div class="card shadow">
+            <div class="card-body">
+                <EditForm Model="@loginInput" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <InputText id="username" @bind-Value="loginInput.UserName" class="form-control" required />
+                        <ValidationMessage For="@(() => loginInput.UserName)" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <InputText type="password" id="password" @bind-Value="loginInput.Password" class="form-control" required />
+                        <ValidationMessage For="@(() => loginInput.Password)" />
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary">Login</button>
+                    </div>
+                    <p class="text-danger mt-3 text-center">@errorMessage</p>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+</style>
+
+@code {
+    private string errorMessage = "";
+    private LoginInput loginInput = new LoginInput();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await CustomAuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            Navigation.NavigateTo("/ContactList");
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        var response = await HttpClient.PostAsJsonAsync("/login", loginInput);
+        if (response.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo("/ContactList", true);
+        }
+        else
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+    }
+}
